@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบห้องสมุด - ประวัติการยืม</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book"></i>
+                <h1>ระบบห้องสมุด</h1>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    หน้าหลัก
+                </a>
+                <a href="check-borrow.html" class="nav-link">
+                    <i class="fas fa-clipboard-check"></i>
+                    เช็คการยืม
+                </a>
+                <a href="history.html" class="nav-link active">
+                    <i class="fas fa-history"></i>
+                    ประวัติการยืม
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h2>ประวัติการยืม-คืนหนังสือ</h2>
+                <p>ดูประวัติการยืมและคืนหนังสือทั้งหมด</p>
+            </div>
+
+            <!-- Filter Options -->
+            <div class="filter-container">
+                <div class="filter-group">
+                    <label for="statusFilter">สถานะ:</label>
+                    <select id="statusFilter">
+                        <option value="all">ทั้งหมด</option>
+                        <option value="borrowed">กำลังยืม</option>
+                        <option value="returned">คืนแล้ว</option>
+                    </select>
+                </div>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchHistory" placeholder="ค้นหาชื่อหนังสือ หรือชื่อผู้ยืม...">
+                </div>
+            </div>
+
+            <!-- History List -->
+            <div id="historyList" class="history-list">
+                <!-- History items will be loaded here -->
+            </div>
+
+            <!-- No History -->
+            <div id="noHistory" class="no-results" style="display: none;">
+                <i class="fas fa-history"></i>
+                <p>ยังไม่มีประวัติการยืม</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHistory();
+            setupHistoryFilter();
+        });
+    </script>
+</body>
+</html>
