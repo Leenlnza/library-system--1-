@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบห้องสมุด - หน้าหลัก</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book"></i>
+                <h1>ระบบห้องสมุด</h1>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link active">
+                    <i class="fas fa-home"></i>
+                    หน้าหลัก
+                </a>
+                <a href="check-borrow.html" class="nav-link">
+                    <i class="fas fa-clipboard-check"></i>
+                    เช็คการยืม
+                </a>
+                <a href="history.html" class="nav-link">
+                    <i class="fas fa-history"></i>
+                    ประวัติการยืม
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h2>รายการหนังสือ</h2>
+                <p>ค้นหาและยืมหนังสือที่คุณสนใจ</p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="ค้นหาหนังสือ ชื่อผู้แต่ง หรือหมวดหมู่...">
+                </div>
+            </div>
+
+            <!-- Books Grid -->
+            <div id="booksGrid" class="books-grid">
+                <!-- Books will be loaded here by JavaScript -->
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>กำลังโหลดข้อมูล...</p>
+            </div>
+
+            <!-- No Results -->
+            <div id="noResults" class="no-results" style="display: none;">
+                <i class="fas fa-book"></i>
+                <p>ไม่พบหนังสือที่ค้นหา</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Borrow Modal -->
+    <div id="borrowModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>ยืมหนังสือ</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="book-preview">
+                    <img id="modalBookCover" src="/placeholder.svg" alt="">
+                    <div class="book-info">
+                        <h4 id="modalBookTitle"></h4>
+                        <p id="modalBookAuthor"></p>
+                        <p id="modalBookCategory"></p>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="borrowerName">ชื่อผู้ยืม *</label>
+                    <input type="text" id="borrowerName" placeholder="ใส่ชื่อผู้ยืม" required>
+                </div>
+                <div class="form-group">
+                    <label for="borrowerPhone">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="borrowerPhone" placeholder="08x-xxx-xxxx">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmBorrowBtn" class="btn btn-primary">ยืนยันการยืม</button>
+                <button id="cancelBorrowBtn" class="btn btn-outline">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Modal -->
+    <div id="returnModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>คืนหนังสือ</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="book-preview">
+                    <img id="returnModalBookCover" src="/placeholder.svg" alt="">
+                    <div class="book-info">
+                        <h4 id="returnModalBookTitle"></h4>
+                        <p id="returnModalBookAuthor"></p>
+                        <p id="returnModalBookCategory"></p>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>กรุณายืนยันตัวตนเพื่อคืนหนังสือ</p>
+                </div>
+                <div class="form-group">
+                    <label for="returnBorrowerName">ชื่อผู้ยืม *</label>
+                    <input type="text" id="returnBorrowerName" placeholder="ใส่ชื่อผู้ยืม" required>
+                </div>
+                <div class="form-group">
+                    <label for="returnBorrowerPhone">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                    <input type="tel" id="returnBorrowerPhone" placeholder="08x-xxx-xxxx">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmReturnBtn" class="btn btn-danger">ยืนยันการคืน</button>
+                <button id="cancelReturnBtn" class="btn btn-outline">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Initialize books page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBooks();
+            setupSearch();
+            setupBorrowModal();
+            setupReturnModal();
+        });
+    </script>
+</body>
+</html>

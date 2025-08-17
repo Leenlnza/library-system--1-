@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบห้องสมุดออนไลน์</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book"></i>
+                <h1>ระบบห้องสมุด</h1>
+            </div>
+            
+            <div class="nav-menu">
+                <div class="nav-link active" onclick="showPage('books')">
+                    <i class="fas fa-home"></i>
+                    หน้าหลัก
+                </div>
+                <div class="nav-link" onclick="showPage('borrowed')">
+                    <i class="fas fa-clipboard-check"></i>
+                    เช็คการยืม
+                </div>
+                <div class="nav-link" onclick="showPage('history')">
+                    <i class="fas fa-history"></i>
+                    ประวัติการยืม
+                </div>
+                <div class="nav-link" onclick="testAPI()">
+                    <i class="fas fa-cog"></i>
+                    ทดสอบ API
+                </div>
+            </div>
+
+            <div class="nav-user">
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <div class="user-details">
+                        <span id="userName"></span>
+                        <small id="userEmail"></small>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-outline">
+                        <i class="fas fa-sign-out-alt"></i>
+                        ออกจากระบบ
+                    </button>
+                </div>
+                <button id="loginLink" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    เข้าสู่ระบบ
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Status Message -->
+    <div id="statusMessage" style="display: none;"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Books Page -->
+            <div id="booksPage" class="page">
+                <div class="page-header">
+                    <h2>รายการหนังสือ</h2>
+                    <p>ค้นหาและยืมหนังสือที่คุณสนใจ</p>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="ค้นหาหนังสือ ชื่อผู้แต่ง หรือหมวดหมู่...">
+                    </div>
+                </div>
+
+                <!-- Books Grid -->
+                <div id="booksGrid" class="books-grid">
+                    <!-- Books will be loaded here -->
+                </div>
+
+                <!-- Loading -->
+                <div id="loading" class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>กำลังโหลดข้อมูล...</p>
+                </div>
+
+                <!-- No Results -->
+                <div id="noResults" class="no-results" style="display: none;">
+                    <i class="fas fa-book"></i>
+                    <p>ไม่พบหนังสือที่ค้นหา</p>
+                </div>
+            </div>
+
+            <!-- Borrowed Page -->
+            <div id="borrowedPage" class="page" style="display: none;">
+                <div class="page-header">
+                    <h2>เช็คการยืมหนังสือ</h2>
+                    <p>ตรวจสอบหนังสือที่กำลังถูกยืมอยู่</p>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="summary-info">
+                            <h3 id="totalBooks">0</h3>
+                            <p>หนังสือทั้งหมด</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon available">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="summary-info">
+                            <h3 id="availableBooks">0</h3>
+                            <p>หนังสือว่าง</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon borrowed">
+                            <i class="fas fa-hand-holding"></i>
+                        </div>
+                        <div class="summary-info">
+                            <h3 id="borrowedBooks">0</h3>
+                            <p>หนังสือที่ถูกยืม</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-icon overdue">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="summary-info">
+                            <h3 id="overdueBooks">0</h3>
+                            <p>หนังสือเกินกำหนด</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Borrowed Books List -->
+                <div id="borrowedList" class="books-grid">
+                    <!-- Borrowed books will be loaded here -->
+                </div>
+
+                <!-- No Borrowed Books -->
+                <div id="noBorrowed" class="no-results" style="display: none;">
+                    <i class="fas fa-clipboard-check"></i>
+                    <p>ไม่มีหนังสือที่ถูกยืมในขณะนี้</p>
+                </div>
+            </div>
+
+            <!-- History Page -->
+            <div id="historyPage" class="page" style="display: none;">
+                <div class="page-header">
+                    <h2>ประวัติการยืม-คืนหนังสือ</h2>
+                    <p>ดูประวัติการยืมและคืนหนังสือทั้งหมด</p>
+                </div>
+
+                <!-- History List -->
+                <div id="historyList" class="books-grid">
+                    <!-- History items will be loaded here -->
+                </div>
+
+                <!-- No History -->
+                <div id="noHistory" class="no-results" style="display: none;">
+                    <i class="fas fa-history"></i>
+                    <p>ยังไม่มีประวัติการยืม</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Borrow Modal -->
+    <div id="borrowModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>ยืมหนังสือ</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="book-preview">
+                    <img id="modalBookCover" src="/placeholder.svg" alt="">
+                    <div class="book-info">
+                        <h4 id="modalBookTitle"></h4>
+                        <p id="modalBookAuthor"></p>
+                        <p id="modalBookCategory"></p>
+                    </div>
+                </div>
+                <div class="alert alert-info" id="borrowerInfoAlert">
+                    <i class="fas fa-info-circle"></i>
+                    <p id="borrowerInfoText"></p>
+                </div>
+                <div class="form-group" id="borrowerNameGroup">
+                    <label for="borrowerName">ชื่อผู้ยืม *</label>
+                    <input type="text" id="borrowerName" placeholder="ใส่ชื่อผู้ยืม" required>
+                </div>
+                <div class="form-group" id="borrowerPhoneGroup">
+                    <label for="borrowerPhone">เบอร์โทรศัพท์</label>
+                    <input type="tel" id="borrowerPhone" placeholder="08x-xxx-xxxx">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmBorrowBtn" class="btn btn-primary">ยืนยันการยืม</button>
+                <button id="cancelBorrowBtn" class="btn btn-outline">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Modal -->
+    <div id="returnModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>คืนหนังสือ</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="book-preview">
+                    <img id="returnModalBookCover" src="/placeholder.svg" alt="">
+                    <div class="book-info">
+                        <h4 id="returnModalBookTitle"></h4>
+                        <p id="returnModalBookAuthor"></p>
+                        <p id="returnModalBookCategory"></p>
+                    </div>
+                </div>
+                <div class="alert alert-info" id="returnerInfoAlert">
+                    <i class="fas fa-info-circle"></i>
+                    <p id="returnerInfoText"></p>
+                </div>
+                <div class="form-group" id="returnerNameGroup">
+                    <label for="returnBorrowerName">ชื่อผู้ยืม *</label>
+                    <input type="text" id="returnBorrowerName" placeholder="ใส่ชื่อผู้ยืม" required>
+                </div>
+                <div class="form-group" id="returnerPhoneGroup">
+                    <label for="returnBorrowerPhone">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                    <input type="tel" id="returnBorrowerPhone" placeholder="08x-xxx-xxxx">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirmReturnBtn" class="btn btn-danger">ยืนยันการคืน</button>
+                <button id="cancelReturnBtn" class="btn btn-outline">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal (Login/Register) -->
+    <div id="authModal" class="modal">
+        <div class="modal-content login-card">
+            <div class="modal-header login-header">
+                <h3>ระบบห้องสมุด</h3>
+                <button class="modal-close" id="authModalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="login">เข้าสู่ระบบ</button>
+                    <button class="tab-btn" data-tab="register">สมัครสมาชิก</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginTab" class="tab-content active">
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="loginEmail">อีเมล</label>
+                            <input type="email" id="loginEmail" placeholder="your@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">รหัสผ่าน</label>
+                            <input type="password" id="loginPassword" placeholder="********" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">เข้าสู่ระบบ</button>
+                    </form>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerTab" class="tab-content">
+                    <form id="registerForm">
+                        <div class="form-group">
+                            <label for="registerName">ชื่อ-นามสกุล</label>
+                            <input type="text" id="registerName" placeholder="ชื่อ นามสกุล" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerEmail">อีเมล</label>
+                            <input type="email" id="registerEmail" placeholder="your@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPhone">เบอร์โทรศัพท์</label>
+                            <input type="tel" id="registerPhone" placeholder="08x-xxx-xxxx" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword">รหัสผ่าน</label>
+                            <input type="password" id="registerPassword" placeholder="********" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">สมัครสมาชิก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

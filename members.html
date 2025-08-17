@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบห้องสมุด - สมาชิก</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book"></i>
+                <h1>ระบบห้องสมุด</h1>
+            </div>
+            
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    หน้าหลัก
+                </a>
+                <a href="history.html" class="nav-link">
+                    <i class="fas fa-history"></i>
+                    ประวัติการยืม
+                </a>
+                <a href="members.html" class="nav-link active">
+                    <i class="fas fa-users"></i>
+                    สมาชิก
+                </a>
+            </div>
+
+            <div class="nav-user">
+                <div id="userInfo" class="user-info" style="display: none;">
+                    <div class="user-details">
+                        <span id="userName"></span>
+                        <small id="userEmail"></small>
+                    </div>
+                    <button id="logoutBtn" class="btn btn-outline">
+                        <i class="fas fa-sign-out-alt"></i>
+                        ออกจากระบบ
+                    </button>
+                </div>
+                <a href="login.html" id="loginLink" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    เข้าสู่ระบบ
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div>
+                    <h2>รายชื่อสมาชิก</h2>
+                    <p>จัดการสมาชิกห้องสมุด</p>
+                </div>
+                <a href="login.html" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    เพิ่มสมาชิกใหม่
+                </a>
+            </div>
+
+            <!-- Members Grid -->
+            <div id="membersGrid" class="members-grid">
+                <!-- Members will be loaded here -->
+            </div>
+
+            <!-- No Members -->
+            <div id="noMembers" class="no-results" style="display: none;">
+                <i class="fas fa-users"></i>
+                <p>ยังไม่มีสมาชิกในระบบ</p>
+                <a href="login.html" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i>
+                    สมัครสมาชิกคนแรก
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAuth();
+            loadMembers();
+        });
+    </script>
+</body>
+</html>
