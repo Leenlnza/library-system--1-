@@ -1,6 +1,9 @@
 // Global variables
 let books = []
+let history = []
 let currentBookId = null
+let currentPage = "books"
+let currentMember = null // เพิ่มตัวแปรสำหรับเก็บข้อมูลสมาชิกที่เข้าสู่ระบบ
 
 // API Base URL
 const API_BASE = "/api"
@@ -16,12 +19,48 @@ function hideLoading() {
   if (loading) loading.style.display = "none"
 }
 
+function showStatus(message, type = "success") {
+  const statusMessage = document.getElementById("statusMessage")
+  statusMessage.className = `status-message status-${type}`
+  statusMessage.innerHTML = `
+        <i class="fas fa-${type === "success" ? "check-circle" : "exclamation-triangle"}"></i>
+        ${message}
+    `
+  statusMessage.style.display = "block"
+
+  setTimeout(() => {
+    statusMessage.style.display = "none"
+  }, 5000)
+}
+
 function showError(message) {
-  alert("เกิดข้อผิดพลาด: " + message)
+  console.error("❌ Error:", message)
+  showStatus(message, "error")
 }
 
 function showSuccess(message) {
-  alert(message)
+  console.log("✅ Success:", message)
+  showStatus(message, "success")
+}
+
+// Test API function
+async function testAPI() {
+  console.log("🔧 Testing API...")
+
+  try {
+    const response = await fetch(`${API_BASE}/test`)
+    const data = await response.json()
+
+    if (response.ok) {
+      showSuccess(
+        `API ทำงานปกติ! หนังสือ: ${data.booksCount} เล่ม, ประวัติ: ${data.historyCount} รายการ, สมาชิก: ${data.membersCount} คน`,
+      )
+    } else {
+      throw new Error(data.error || "API test failed")
+    }
+  } catch (error) {
+    showError("API ไม่ทำงาน: " + error.message)
+  }
 }
 
 // Check if book is overdue
@@ -42,22 +81,70 @@ function getDaysOverdue(dueDate) {
 
 // Format date
 function formatDate(dateString) {
-  const date = new Date(dateString)
-  return date.toLocaleDateString("th-TH")
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("th-TH")
+  } catch (error) {
+    return dateString
+  }
+}
+
+// Page navigation
+function showPage(page) {
+  console.log("📄 Switching to page:", page)
+
+  // Hide all pages
+  document.querySelectorAll(".page").forEach((p) => (p.style.display = "none"))
+
+  // Remove active class from all nav links
+  document.querySelectorAll(".nav-link").forEach((link) => link.classList.remove("active"))
+
+  // Show selected page
+  const pageElement = document.getElementById(page + "Page")
+  if (pageElement) {
+    pageElement.style.display = "block"
+  }
+
+  // Add active class to selected nav link
+  const clickedLink = event.currentTarget // Use currentTarget for the element with the event listener
+  if (clickedLink) {
+    clickedLink.classList.add("active")
+  }
+
+  currentPage = page
+
+  // Load data for the page
+  if (page === "books") {
+    loadBooks()
+  } else if (page === "borrowed") {
+    loadBorrowedBooks()
+    updateSummary()
+  } else if (page === "history") {
+    loadHistory()
+  }
 }
 
 // Load and display books
 async function loadBooks() {
+  console.log("📚 Loading books...")
+
   try {
     showLoading()
-    const response = await fetch(`${API_BASE}/books`)
-    if (!response.ok) throw new Error("Failed to fetch books")
 
-    books = await response.json()
+    const response = await fetch(`${API_BASE}/books`)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    console.log("📚 Books loaded:", data.length, "books")
+
+    books = data
     displayBooks(books)
   } catch (error) {
-    console.error("Error loading books:", error)
-    showError("ไม่สามารถโหลดข้อมูลหนังสือได้")
+    console.error("❌ Error loading books:", error)
+    showError("ไม่สามารถโหลดข้อมูลหนังสือได้: " + error.message)
   } finally {
     hideLoading()
   }
@@ -72,11 +159,11 @@ function displayBooks(booksToShow) {
 
   if (booksToShow.length === 0) {
     booksGrid.style.display = "none"
-    noResults.style.display = "block"
+    if (noResults) noResults.style.display = "block"
     return
   }
 
-  noResults.style.display = "none"
+  if (noResults) noResults.style.display = "none"
   booksGrid.style.display = "grid"
   booksGrid.innerHTML = ""
 
@@ -158,43 +245,36 @@ function setupSearch() {
   })
 }
 
-// Borrow modal functionality
-function setupBorrowModal() {
-  const modal = document.getElementById("borrowModal")
-  const closeBtn = modal.querySelector(".modal-close")
-  const cancelBtn = document.getElementById("cancelBorrowBtn")
-  const confirmBtn = document.getElementById("confirmBorrowBtn")
+// Modal functions
+function setupModals() {
+  // Borrow modal
+  const borrowModal = document.getElementById("borrowModal")
+  const borrowCloseBtn = borrowModal.querySelector(".modal-close")
+  const cancelBorrowBtn = document.getElementById("cancelBorrowBtn")
+  const confirmBorrowBtn = document.getElementById("confirmBorrowBtn")
 
-  if (!modal) return
+  borrowCloseBtn.addEventListener("click", closeBorrowModal)
+  cancelBorrowBtn.addEventListener("click", closeBorrowModal)
+  confirmBorrowBtn.addEventListener("click", confirmBorrow)
 
-  closeBtn.addEventListener("click", closeBorrowModal)
-  cancelBtn.addEventListener("click", closeBorrowModal)
-  confirmBtn.addEventListener("click", confirmBorrow)
-
-  // Close modal when clicking outside
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) {
+  borrowModal.addEventListener("click", (e) => {
+    if (e.target === borrowModal) {
       closeBorrowModal()
     }
   })
-}
 
-// Return modal functionality
-function setupReturnModal() {
-  const modal = document.getElementById("returnModal")
-  const closeBtn = modal.querySelector(".modal-close")
-  const cancelBtn = document.getElementById("cancelReturnBtn")
-  const confirmBtn = document.getElementById("confirmReturnBtn")
+  // Return modal
+  const returnModal = document.getElementById("returnModal")
+  const returnCloseBtn = returnModal.querySelector(".modal-close")
+  const cancelReturnBtn = document.getElementById("cancelReturnBtn")
+  const confirmReturnBtn = document.getElementById("confirmReturnBtn")
 
-  if (!modal) return
+  returnCloseBtn.addEventListener("click", closeReturnModal)
+  cancelReturnBtn.addEventListener("click", closeReturnModal)
+  confirmReturnBtn.addEventListener("click", confirmReturn)
 
-  closeBtn.addEventListener("click", closeReturnModal)
-  cancelBtn.addEventListener("click", closeReturnModal)
-  confirmBtn.addEventListener("click", confirmReturn)
-
-  // Close modal when clicking outside
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) {
+  returnModal.addEventListener("click", (e) => {
+    if (e.target === returnModal) {
       closeReturnModal()
     }
   })
@@ -202,8 +282,17 @@ function setupReturnModal() {
 
 // Open borrow modal
 function openBorrowModal(bookId) {
+  if (!currentMember) {
+    showError("กรุณาเข้าสู่ระบบก่อนยืมหนังสือ")
+    openAuthModal("login") // เปิด modal เข้าสู่ระบบ
+    return
+  }
+
   const book = books.find((b) => b._id === bookId)
-  if (!book) return
+  if (!book) {
+    showError("ไม่พบหนังสือที่ต้องการยืม")
+    return
+  }
 
   currentBookId = bookId
 
@@ -212,11 +301,37 @@ function openBorrowModal(bookId) {
   const modalBookTitle = document.getElementById("modalBookTitle")
   const modalBookAuthor = document.getElementById("modalBookAuthor")
   const modalBookCategory = document.getElementById("modalBookCategory")
+  const borrowerNameInput = document.getElementById("borrowerName")
+  const borrowerPhoneInput = document.getElementById("borrowerPhone")
+  const borrowerInfoAlert = document.getElementById("borrowerInfoAlert")
+  const borrowerInfoText = document.getElementById("borrowerInfoText")
+  const borrowerNameGroup = document.getElementById("borrowerNameGroup")
+  const borrowerPhoneGroup = document.getElementById("borrowerPhoneGroup")
 
   modalBookCover.src = book.coverImage
   modalBookTitle.textContent = book.title
   modalBookAuthor.textContent = book.author
   modalBookCategory.textContent = book.category
+
+  // Pre-fill borrower info if logged in
+  if (currentMember) {
+    borrowerNameInput.value = currentMember.name
+    borrowerPhoneInput.value = currentMember.phone || ""
+    borrowerNameInput.readOnly = true
+    borrowerPhoneInput.readOnly = true
+    borrowerNameGroup.style.display = "none"
+    borrowerPhoneGroup.style.display = "none"
+    borrowerInfoAlert.style.display = "block"
+    borrowerInfoText.innerHTML = `คุณกำลังยืมในชื่อ: <strong>${currentMember.name}</strong> (${currentMember.email})`
+  } else {
+    borrowerNameInput.value = ""
+    borrowerPhoneInput.value = ""
+    borrowerNameInput.readOnly = false
+    borrowerPhoneInput.readOnly = false
+    borrowerNameGroup.style.display = "block"
+    borrowerPhoneGroup.style.display = "block"
+    borrowerInfoAlert.style.display = "none"
+  }
 
   modal.classList.add("show")
 }
@@ -229,13 +344,27 @@ function closeBorrowModal() {
   // Clear form
   document.getElementById("borrowerName").value = ""
   document.getElementById("borrowerPhone").value = ""
+  document.getElementById("borrowerName").readOnly = false
+  document.getElementById("borrowerPhone").readOnly = false
+  document.getElementById("borrowerNameGroup").style.display = "block"
+  document.getElementById("borrowerPhoneGroup").style.display = "block"
+  document.getElementById("borrowerInfoAlert").style.display = "none"
   currentBookId = null
 }
 
 // Open return modal
 function openReturnModal(bookId) {
+  if (!currentMember) {
+    showError("กรุณาเข้าสู่ระบบก่อนคืนหนังสือ")
+    openAuthModal("login") // เปิด modal เข้าสู่ระบบ
+    return
+  }
+
   const book = books.find((b) => b._id === bookId)
-  if (!book) return
+  if (!book) {
+    showError("ไม่พบหนังสือที่ต้องการคืน")
+    return
+  }
 
   currentBookId = bookId
 
@@ -244,11 +373,37 @@ function openReturnModal(bookId) {
   const modalBookTitle = document.getElementById("returnModalBookTitle")
   const modalBookAuthor = document.getElementById("returnModalBookAuthor")
   const modalBookCategory = document.getElementById("returnModalBookCategory")
+  const returnBorrowerNameInput = document.getElementById("returnBorrowerName")
+  const returnBorrowerPhoneInput = document.getElementById("returnBorrowerPhone")
+  const returnerInfoAlert = document.getElementById("returnerInfoAlert")
+  const returnerInfoText = document.getElementById("returnerInfoText")
+  const returnerNameGroup = document.getElementById("returnerNameGroup")
+  const returnerPhoneGroup = document.getElementById("returnerPhoneGroup")
 
   modalBookCover.src = book.coverImage
   modalBookTitle.textContent = book.title
   modalBookAuthor.textContent = book.author
   modalBookCategory.textContent = book.category
+
+  // Pre-fill returner info if logged in
+  if (currentMember) {
+    returnBorrowerNameInput.value = currentMember.name
+    returnBorrowerPhoneInput.value = currentMember.phone || ""
+    returnBorrowerNameInput.readOnly = true
+    returnBorrowerPhoneInput.readOnly = true
+    returnerNameGroup.style.display = "none"
+    returnerPhoneGroup.style.display = "none"
+    returnerInfoAlert.style.display = "block"
+    returnerInfoText.innerHTML = `คุณกำลังยืนยันตัวตนในชื่อ: <strong>${currentMember.name}</strong> (${currentMember.email})`
+  } else {
+    returnBorrowerNameInput.value = ""
+    returnBorrowerPhoneInput.value = ""
+    returnBorrowerNameInput.readOnly = false
+    returnBorrowerPhoneInput.readOnly = false
+    returnerNameGroup.style.display = "block"
+    returnerPhoneGroup.style.display = "block"
+    returnerInfoAlert.style.display = "none"
+  }
 
   modal.classList.add("show")
 }
@@ -261,6 +416,11 @@ function closeReturnModal() {
   // Clear form
   document.getElementById("returnBorrowerName").value = ""
   document.getElementById("returnBorrowerPhone").value = ""
+  document.getElementById("returnBorrowerName").readOnly = false
+  document.getElementById("returnBorrowerPhone").readOnly = false
+  document.getElementById("returnerNameGroup").style.display = "block"
+  document.getElementById("returnerPhoneGroup").style.display = "block"
+  document.getElementById("returnerInfoAlert").style.display = "none"
   currentBookId = null
 }
 
@@ -270,13 +430,18 @@ async function confirmBorrow() {
   const borrowerPhone = document.getElementById("borrowerPhone").value.trim()
 
   if (!borrowerName) {
-    alert("กรุณาใส่ชื่อผู้ยืม")
+    showError("กรุณาใส่ชื่อผู้ยืม")
     return
   }
 
-  if (!currentBookId) return
+  if (!currentBookId) {
+    showError("ไม่พบรหัสหนังสือ")
+    return
+  }
 
   try {
+    console.log("📝 Borrowing book:", currentBookId, "by", borrowerName)
+
     const response = await fetch(`${API_BASE}/books/${currentBookId}/borrow`, {
       method: "POST",
       headers: {
@@ -294,12 +459,13 @@ async function confirmBorrow() {
       throw new Error(result.error || "Failed to borrow book")
     }
 
+    console.log("✅ Book borrowed successfully")
     showSuccess(result.message)
     closeBorrowModal()
     loadBooks() // Reload books
   } catch (error) {
-    console.error("Error borrowing book:", error)
-    showError(error.message)
+    console.error("❌ Error borrowing book:", error)
+    showError("ไม่สามารถยืมหนังสือได้: " + error.message)
   }
 }
 
@@ -309,13 +475,18 @@ async function confirmReturn() {
   const borrowerPhone = document.getElementById("returnBorrowerPhone").value.trim()
 
   if (!borrowerName) {
-    alert("กรุณาใส่ชื่อผู้ยืม")
+    showError("กรุณาใส่ชื่อผู้ยืม")
     return
   }
 
-  if (!currentBookId) return
+  if (!currentBookId) {
+    showError("ไม่พบรหัสหนังสือ")
+    return
+  }
 
   try {
+    console.log("📝 Returning book:", currentBookId, "by", borrowerName)
+
     const response = await fetch(`${API_BASE}/books/${currentBookId}/return`, {
       method: "POST",
       headers: {
@@ -333,30 +504,41 @@ async function confirmReturn() {
       throw new Error(result.error || "Failed to return book")
     }
 
+    console.log("✅ Book returned successfully")
     showSuccess(result.message)
     closeReturnModal()
-    loadBooks() // Reload books
+
+    // Reload current page data
+    if (currentPage === "books") {
+      loadBooks()
+    } else if (currentPage === "borrowed") {
+      loadBorrowedBooks()
+      updateSummary()
+    }
   } catch (error) {
-    console.error("Error returning book:", error)
-    showError(error.message)
+    console.error("❌ Error returning book:", error)
+    showError("ไม่สามารถคืนหนังสือได้: " + error.message)
   }
 }
 
-// Load borrowed books (for check-borrow page)
+// Load borrowed books
 async function loadBorrowedBooks() {
+  console.log("📋 Loading borrowed books...")
+
   try {
-    showLoading()
     const response = await fetch(`${API_BASE}/borrowed`)
-    if (!response.ok) throw new Error("Failed to fetch borrowed books")
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
 
     const borrowedBooks = await response.json()
+    console.log("📋 Borrowed books loaded:", borrowedBooks.length, "books")
+
     displayBorrowedBooks(borrowedBooks)
-    updateSummary()
   } catch (error) {
-    console.error("Error loading borrowed books:", error)
-    showError("ไม่สามารถโหลดข้อมูลการยืมได้")
-  } finally {
-    hideLoading()
+    console.error("❌ Error loading borrowed books:", error)
+    showError("ไม่สามารถโหลดข้อมูลการยืมได้: " + error.message)
   }
 }
 
@@ -369,41 +551,17 @@ function displayBorrowedBooks(borrowedBooks) {
 
   if (borrowedBooks.length === 0) {
     borrowedList.style.display = "none"
-    noBorrowed.style.display = "block"
+    if (noBorrowed) noBorrowed.style.display = "block"
     return
   }
 
-  noBorrowed.style.display = "none"
-  borrowedList.style.display = "block"
+  if (noBorrowed) noBorrowed.style.display = "none"
+  borrowedList.style.display = "grid"
   borrowedList.innerHTML = ""
 
   borrowedBooks.forEach((book) => {
-    const borrowedItem = document.createElement("div")
-    borrowedItem.className = `borrowed-item ${isOverdue(book.dueDate) ? "overdue" : ""}`
-
-    borrowedItem.innerHTML = `
-            <div class="borrowed-info">
-                <h3>
-                    <i class="fas fa-book"></i>
-                    ${book.title}
-                    ${isOverdue(book.dueDate) ? '<i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>' : ""}
-                </h3>
-                <p><strong>ผู้แต่ง:</strong> ${book.author}</p>
-                <p><strong>หมวดหมู่:</strong> ${book.category}</p>
-                <div class="borrowed-details">
-                    <div><strong>ผู้ยืม:</strong> ${book.borrowedBy}</div>
-                    <div><strong>เบอร์โทร:</strong> ${book.borrowerPhone || "ไม่ระบุ"}</div>
-                    <div><strong>วันที่ยืม:</strong> ${formatDate(book.borrowedDate)}</div>
-                    <div><strong>วันที่ต้องคืน:</strong> ${formatDate(book.dueDate)}</div>
-                    ${isOverdue(book.dueDate) ? `<div style="color: #ef4444; font-weight: bold;"><strong>เกินกำหนด:</strong> ${getDaysOverdue(book.dueDate)} วัน</div>` : ""}
-                </div>
-            </div>
-            <div class="borrowed-actions">
-                <button class="btn btn-danger" onclick="openReturnModal('${book._id}')">คืนหนังสือ</button>
-            </div>
-        `
-
-    borrowedList.appendChild(borrowedItem)
+    const bookCard = createBookCard(book)
+    borrowedList.appendChild(bookCard)
   })
 }
 
@@ -430,24 +588,28 @@ async function updateSummary() {
     if (borrowedBooksEl) borrowedBooksEl.textContent = borrowedBooks
     if (overdueBooksEl) overdueBooksEl.textContent = overdueBooks
   } catch (error) {
-    console.error("Error updating summary:", error)
+    console.error("❌ Error updating summary:", error)
   }
 }
 
 // Load history
 async function loadHistory() {
-  try {
-    showLoading()
-    const response = await fetch(`${API_BASE}/history`)
-    if (!response.ok) throw new Error("Failed to fetch history")
+  console.log("📜 Loading history...")
 
-    const history = await response.json()
+  try {
+    const response = await fetch(`${API_BASE}/history`)
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    history = await response.json()
+    console.log("📜 History loaded:", history.length, "records")
+
     displayHistory(history)
   } catch (error) {
-    console.error("Error loading history:", error)
-    showError("ไม่สามารถโหลดประวัติได้")
-  } finally {
-    hideLoading()
+    console.error("❌ Error loading history:", error)
+    showError("ไม่สามารถโหลดประวัติได้: " + error.message)
   }
 }
 
@@ -460,55 +622,250 @@ function displayHistory(historyData) {
 
   if (historyData.length === 0) {
     historyList.style.display = "none"
-    noHistory.style.display = "block"
+    if (noHistory) noHistory.style.display = "block"
     return
   }
 
-  noHistory.style.display = "none"
-  historyList.style.display = "block"
+  if (noHistory) noHistory.style.display = "none"
+  historyList.style.display = "grid"
   historyList.innerHTML = ""
 
   historyData.forEach((record) => {
-    const historyItem = document.createElement("div")
-    historyItem.className = "history-item"
+    const historyCard = document.createElement("div")
+    historyCard.className = "book-card" // Reusing book-card style for history items
 
-    historyItem.innerHTML = `
-            <div class="history-info">
-                <h3>
+    historyCard.innerHTML = `
+            <div class="book-info">
+                <h3 class="book-title">
                     <i class="fas fa-book"></i>
                     ${record.bookTitle}
                 </h3>
-                <p><strong>ผู้ยืม:</strong> ${record.borrower}</p>
-                <p><strong>เบอร์โทร:</strong> ${record.borrowerPhone || "ไม่ระบุ"}</p>
-                <div class="history-dates">
-                    <span><i class="fas fa-calendar"></i> วันที่ยืม: ${formatDate(record.borrowedDate)}</span>
-                    <span><i class="fas fa-calendar"></i> วันที่ต้องคืน: ${formatDate(record.dueDate)}</span>
-                    ${record.returnedDate ? `<span><i class="fas fa-calendar-check"></i> วันที่คืน: ${formatDate(record.returnedDate)}</span>` : ""}
+                <p class="book-author"><strong>ผู้ยืม:</strong> ${record.borrower}</p>
+                <p class="book-category"><strong>เบอร์โทร:</strong> ${record.borrowerPhone || "ไม่ระบุ"}</p>
+                <div class="book-borrowed-info">
+                    <p><i class="fas fa-calendar"></i> <strong>วันที่ยืม:</strong> ${formatDate(record.borrowedDate)}</p>
+                    <p><i class="fas fa-calendar"></i> <strong>วันที่ต้องคืน:</strong> ${formatDate(record.dueDate)}</p>
+                    ${record.returnedDate ? `<p><i class="fas fa-calendar-check"></i> <strong>วันที่คืน:</strong> ${formatDate(record.returnedDate)}</p>` : ""}
                 </div>
-            </div>
-            <div class="history-status ${record.status === "borrowed" ? "status-borrowed" : "status-returned"}">
-                ${record.status === "borrowed" ? "กำลังยืม" : "คืนแล้ว"}
+                <div class="book-actions">
+                    <span class="btn ${record.status === "borrowed" ? "btn-danger" : "btn-success"}">
+                        ${record.status === "borrowed" ? "กำลังยืม" : "คืนแล้ว"}
+                    </span>
+                </div>
             </div>
         `
 
-    historyList.appendChild(historyItem)
+    historyList.appendChild(historyCard)
   })
 }
 
-// Initialize sample data
-async function initSampleData() {
-  try {
-    const response = await fetch(`${API_BASE}/init-data`, {
-      method: "POST",
-    })
-    const result = await response.json()
-    console.log(result.message)
-  } catch (error) {
-    console.error("Error initializing data:", error)
+// --- Auth Functions ---
+
+// Initialize Auth state from localStorage
+function initializeAuth() {
+  const token = localStorage.getItem("token")
+  const memberInfo = localStorage.getItem("current-member-info")
+  const userInfoDiv = document.getElementById("userInfo")
+  const userNameSpan = document.getElementById("userName")
+  const userEmailSmall = document.getElementById("userEmail")
+  const loginLinkBtn = document.getElementById("loginLink")
+  const logoutBtn = document.getElementById("logoutBtn")
+
+  if (token && memberInfo) {
+    try {
+      currentMember = JSON.parse(memberInfo)
+      if (userInfoDiv && userNameSpan && userEmailSmall && loginLinkBtn && logoutBtn) {
+        userNameSpan.textContent = currentMember.name
+        userEmailSmall.textContent = currentMember.email
+        userInfoDiv.style.display = "flex"
+        loginLinkBtn.style.display = "none"
+        logoutBtn.addEventListener("click", handleLogout)
+      }
+    } catch (error) {
+      console.error("Error parsing member info from localStorage:", error)
+      handleLogout() // Clear invalid data
+    }
+  } else {
+    currentMember = null
+    if (userInfoDiv && loginLinkBtn) {
+      userInfoDiv.style.display = "none"
+      loginLinkBtn.style.display = "block"
+      loginLinkBtn.addEventListener("click", () => openAuthModal("login"))
+    }
   }
 }
 
-// Initialize data on first load
+// Setup Auth Modal (Login/Register)
+function setupAuthModal() {
+  const authModal = document.getElementById("authModal")
+  const authModalCloseBtn = document.getElementById("authModalCloseBtn")
+  const tabButtons = document.querySelectorAll(".tab-btn")
+  const loginForm = document.getElementById("loginForm")
+  const registerForm = document.getElementById("registerForm")
+
+  if (!authModal) return
+
+  authModalCloseBtn.addEventListener("click", closeAuthModal)
+  authModal.addEventListener("click", (e) => {
+    if (e.target === authModal) {
+      closeAuthModal()
+    }
+  })
+
+  tabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const tab = button.dataset.tab
+      switchAuthTab(tab)
+    })
+  })
+
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault()
+      handleLogin()
+    })
+  }
+
+  if (registerForm) {
+    registerForm.addEventListener("submit", (e) => {
+      e.preventDefault()
+      handleRegister()
+    })
+  }
+}
+
+function openAuthModal(tab = "login") {
+  const authModal = document.getElementById("authModal")
+  if (authModal) {
+    authModal.classList.add("show")
+    switchAuthTab(tab)
+  }
+}
+
+function closeAuthModal() {
+  const authModal = document.getElementById("authModal")
+  if (authModal) {
+    authModal.classList.remove("show")
+    // Clear form fields
+    document.getElementById("loginEmail").value = ""
+    document.getElementById("loginPassword").value = ""
+    document.getElementById("registerName").value = ""
+    document.getElementById("registerEmail").value = ""
+    document.getElementById("registerPhone").value = ""
+    document.getElementById("registerPassword").value = ""
+  }
+}
+
+function switchAuthTab(tab) {
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.classList.remove("active")
+  })
+  document.querySelectorAll(".tab-content").forEach((content) => {
+    content.classList.remove("active")
+  })
+
+  const selectedButton = document.querySelector(`.tab-btn[data-tab="${tab}"]`)
+  const selectedContent = document.getElementById(`${tab}Tab`)
+
+  if (selectedButton) selectedButton.classList.add("active")
+  if (selectedContent) selectedContent.classList.add("active")
+}
+
+async function handleLogin() {
+  const email = document.getElementById("loginEmail").value.trim()
+  const password = document.getElementById("loginPassword").value.trim()
+
+  if (!email || !password) {
+    showError("กรุณาใส่อีเมลและรหัสผ่าน")
+    return
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "เข้าสู่ระบบไม่สำเร็จ")
+    }
+
+    localStorage.setItem("token", data.token)
+    localStorage.setItem("current-member-info", JSON.stringify(data.member))
+    currentMember = data.member // Update global currentMember
+
+    showSuccess(`ยินดีต้อนรับ ${data.member.name}!`)
+    closeAuthModal()
+    initializeAuth() // Update navbar
+    loadBooks() // Refresh books in case borrow/return logic needs currentMember
+  } catch (error) {
+    console.error("Login error:", error)
+    showError("เกิดข้อผิดพลาดในการเข้าสู่ระบบ: " + error.message)
+  }
+}
+
+async function handleRegister() {
+  const name = document.getElementById("registerName").value.trim()
+  const email = document.getElementById("registerEmail").value.trim()
+  const phone = document.getElementById("registerPhone").value.trim()
+  const password = document.getElementById("registerPassword").value.trim()
+
+  if (!name || !email || !phone || !password) {
+    showError("กรุณากรอกข้อมูลให้ครบถ้วน")
+    return
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/auth/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email, phone, password }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "สมัครสมาชิกไม่สำเร็จ")
+    }
+
+    showSuccess(`สมัครสมาชิกเรียบร้อย! ยินดีต้อนรับ ${data.member.name}`)
+    // After successful registration, switch to login tab and pre-fill email
+    document.getElementById("loginEmail").value = email
+    switchAuthTab("login")
+  } catch (error) {
+    console.error("Register error:", error)
+    showError("เกิดข้อผิดพลาดในการสมัครสมาชิก: " + error.message)
+  }
+}
+
+function handleLogout() {
+  currentMember = null
+  localStorage.removeItem("token")
+  localStorage.removeItem("current-member-info")
+  showSuccess("ออกจากระบบเรียบร้อยแล้ว")
+  initializeAuth() // Update navbar
+  loadBooks() // Refresh books in case borrow/return logic needs currentMember
+}
+
+// Initialize app
 document.addEventListener("DOMContentLoaded", () => {
-  initSampleData()
+  console.log("🚀 Initializing library system...")
+
+  initializeAuth() // Initialize auth status first
+  loadBooks()
+  setupSearch()
+  setupModals()
+  setupAuthModal() // Setup the new auth modal
+
+  // Auto test API on load
+  setTimeout(() => {
+    testAPI()
+  }, 1000)
 })
