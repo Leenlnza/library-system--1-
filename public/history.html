@@ -41,25 +41,15 @@
                 <p>ดูประวัติการยืมและคืนหนังสือทั้งหมด</p>
             </div>
 
-            <!-- Filter Options -->
-            <div class="filter-container">
-                <div class="filter-group">
-                    <label for="statusFilter">สถานะ:</label>
-                    <select id="statusFilter">
-                        <option value="all">ทั้งหมด</option>
-                        <option value="borrowed">กำลังยืม</option>
-                        <option value="returned">คืนแล้ว</option>
-                    </select>
-                </div>
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchHistory" placeholder="ค้นหาชื่อหนังสือ หรือชื่อผู้ยืม...">
-                </div>
-            </div>
-
             <!-- History List -->
             <div id="historyList" class="history-list">
                 <!-- History items will be loaded here -->
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>กำลังโหลดข้อมูล...</p>
             </div>
 
             <!-- No History -->
@@ -74,7 +64,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             loadHistory();
-            setupHistoryFilter();
         });
     </script>
 </body>
