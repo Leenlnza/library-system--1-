@@ -379,3 +379,6 @@ process.on("SIGINT", () => {
   console.log("✅ ปิดเซิร์ฟเวอร์เรียบร้อยแล้ว")
   process.exit(0)
 })
+// Export app for Vercel
+module.exports = app
+
