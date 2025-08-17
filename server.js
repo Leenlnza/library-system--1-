@@ -96,6 +96,9 @@ app.post("/api/books/:id/borrow", async (req, res) => {
       console.log("❌ No borrower name provided")
       return res.status(400).json({ error: "กรุณาใส่ชื่อผู้ยืม" })
     }
+      if (currentBorrows.length >= 3) {
+    return res.status(400).json({ error: "ยืมหนังสือครบจำนวนที่อนุญาตแล้ว (3 เล่ม)" })
+  }
 
     const borrowedDate = new Date()
     const dueDate = new Date()

@@ -293,6 +293,14 @@ function openBorrowModal(bookId) {
     showError("ไม่พบหนังสือที่ต้องการยืม")
     return
   }
+  const borrowedCount = books.filter(
+    (b) => !b.available && b.borrowedBy === currentMember.name
+  ).length
+
+  if (borrowedCount >= 3) {
+    showError("คุณยืมหนังสือครบจำนวนที่อนุญาตแล้ว (3 เล่ม)")
+    return
+  }
 
   currentBookId = bookId
 
