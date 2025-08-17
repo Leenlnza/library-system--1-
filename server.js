@@ -36,7 +36,7 @@ const Member = require("./models/Member") // เพิ่ม Member model
 
 // Serve static files (เหมือนเดิม)
 app.get("/", (req, res) => {
-  serveFile("index.html", "text/html", res)
+  res.sendFile(path.join(__dirname, "index.html"))
 })
 
 function serveFile(filename, contentType, res) {
