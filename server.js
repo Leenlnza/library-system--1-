@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwtkey" // ดึง JW
 // Middleware
 app.use(cors())
 app.use(express.json())
-app.use(express.static(__dirname))
+app.use(express.static(path.join(__dirname)))
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || "mongodb+srv://LLL:LLL@000.4sgleop.mongodb.net/?retryWrites=true&w=majority&appName=000", {
