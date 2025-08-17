@@ -41,6 +41,14 @@
                 <p>ตรวจสอบหนังสือที่กำลังถูกยืมอยู่</p>
             </div>
 
+            <!-- Search Borrower -->
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchBorrower" placeholder="ค้นหาชื่อผู้ยืม หรือชื่อหนังสือ...">
+                </div>
+            </div>
+
             <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="summary-card">
@@ -86,64 +94,20 @@
                 <!-- Borrowed books will be loaded here -->
             </div>
 
-            <!-- Loading -->
-            <div id="loading" class="loading">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>กำลังโหลดข้อมูล...</p>
-            </div>
-
             <!-- No Borrowed Books -->
             <div id="noBorrowed" class="no-results" style="display: none;">
-                <i class="fas fa-clipboard-check"></i>
-                <p  style="display: none;">
                 <i class="fas fa-clipboard-check"></i>
                 <p>ไม่มีหนังสือที่ถูกยืมในขณะนี้</p>
             </div>
         </div>
     </main>
 
-    <!-- Return Modal -->
-    <div id="returnModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>คืนหนังสือ</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="book-preview">
-                    <img id="returnModalBookCover" src="/placeholder.svg" alt="">
-                    <div class="book-info">
-                        <h4 id="returnModalBookTitle"></h4>
-                        <p id="returnModalBookAuthor"></p>
-                        <p id="returnModalBookCategory"></p>
-                    </div>
-                </div>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    <p>กรุณายืนยันตัวตนเพื่อคืนหนังสือ</p>
-                </div>
-                <div class="form-group">
-                    <label for="returnBorrowerName">ชื่อผู้ยืม *</label>
-                    <input type="text" id="returnBorrowerName" placeholder="ใส่ชื่อผู้ยืม" required>
-                </div>
-                <div class="form-group">
-                    <label for="returnBorrowerPhone">เบอร์โทรศัพท์ (ถ้ามี)</label>
-                    <input type="tel" id="returnBorrowerPhone" placeholder="08x-xxx-xxxx">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="confirmReturnBtn" class="btn btn-danger">ยืนยันการคืน</button>
-                <button id="cancelReturnBtn" class="btn btn-outline">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
     <script src="script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             loadBorrowedBooks();
+            setupBorrowerSearch();
             updateSummary();
-            setupReturnModal();
         });
     </script>
 </body>
