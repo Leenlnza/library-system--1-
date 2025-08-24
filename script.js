@@ -201,7 +201,7 @@ function createBookCard(book) {
 
   card.innerHTML = `
         <div class="book-cover">
-            <img src="${book.coverImage}" alt="ปกหนังสือ ${book.title}" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\"fas fa-book\\"></i>'">
+            <img src="${book.coverImage}" alt="ปกหนังสือ ${book.title}" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\"fas fa-book\\"></i>
             <div class="book-status ${statusClass}">
                 ${statusText}
             </div>

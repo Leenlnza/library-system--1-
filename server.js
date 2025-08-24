@@ -13,10 +13,12 @@ const app = express()
 const PORT = process.env.PORT || 3000
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwtkey" // ดึง JWT_SECRET จาก .env
 
+
 // Middleware
 app.use(cors())
 app.use(express.json())
 app.use(express.static(path.join(__dirname)))
+app.use("/cover", express.static(path.join(__dirname, "cover/uploads")));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || "mongodb+srv://LLL:LLL@000.4sgleop.mongodb.net/?retryWrites=true&w=majority&appName=000", {
@@ -82,24 +84,32 @@ app.post("/api/books/:id/borrow", async (req, res) => {
   try {
     console.log("📝 Borrow request for book:", req.params.id)
     const { borrowerName, borrowerPhone } = req.body
+
     const book = await Book.findById(req.params.id)
     if (!book) {
-      console.log("❌ Book not found:", req.params.id)
       return res.status(404).json({ error: "ไม่พบหนังสือ" })
     }
     if (!book.available) {
-      console.log("❌ Book not available:", req.params.id)
       return res.status(400).json({ error: "หนังสือถูกยืมแล้ว" })
     }
-
     if (!borrowerName) {
-      console.log("❌ No borrower name provided")
       return res.status(400).json({ error: "กรุณาใส่ชื่อผู้ยืม" })
     }
 
+    // ✅ เช็คจำนวนเล่มที่สมาชิกยืมอยู่ (ยังไม่คืน)
+    const borrowedCount = await Book.countDocuments({
+      borrowedBy: borrowerName,
+      available: false,
+    })
+
+    if (borrowedCount >= 3) {
+      return res.status(400).json({ error: "คุณยืมได้ไม่เกิน 3 เล่มพร้อมกัน" })
+    }
+
+    // ✅ ยืมได้
     const borrowedDate = new Date()
     const dueDate = new Date()
-    dueDate.setDate(dueDate.getDate() + 14)
+    dueDate.setDate(dueDate.getDate() + 7)
 
     book.available = false
     book.borrowedBy = borrowerName
@@ -113,12 +123,11 @@ app.post("/api/books/:id/borrow", async (req, res) => {
       bookTitle: book.title,
       borrower: borrowerName,
       borrowerPhone: borrowerPhone,
-      borrowedDate: borrowedDate,
-      dueDate: dueDate,
+      borrowedDate,
+      dueDate,
       status: "borrowed",
     })
 
-    console.log("✅ Book borrowed successfully:", book.title, "by", borrowerName)
     res.json({
       message: "ยืมหนังสือเรียบร้อยแล้ว",
       book,
