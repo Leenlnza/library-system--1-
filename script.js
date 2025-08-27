@@ -293,6 +293,7 @@ function openBorrowModal(bookId) {
     showError("ไม่พบหนังสือที่ต้องการยืม")
     return
   }
+  
 
   currentBookId = bookId
 
@@ -549,7 +550,21 @@ function displayBorrowedBooks(borrowedBooks) {
 
   if (!borrowedList) return
 
-  if (borrowedBooks.length === 0) {
+  if (!currentMember) {
+    borrowedList.style.display = "none"
+    if (noBorrowed) {
+      noBorrowed.style.display = "block"
+      noBorrowed.textContent = "กรุณาเข้าสู่ระบบเพื่อดูรายการหนังสือที่คุณยืม"
+    }
+    return
+  }
+
+  // กรองเฉพาะหนังสือที่ผู้ใช้ปัจจุบันยืม
+  const userBorrowedBooks = borrowedBooks.filter(
+    book => book.borrowedBy && book.borrowedBy.trim().toLowerCase() === currentMember.name.trim().toLowerCase()
+  )
+
+  if (userBorrowedBooks.length === 0) {
     borrowedList.style.display = "none"
     if (noBorrowed) noBorrowed.style.display = "block"
     return
@@ -559,11 +574,13 @@ function displayBorrowedBooks(borrowedBooks) {
   borrowedList.style.display = "grid"
   borrowedList.innerHTML = ""
 
-  borrowedBooks.forEach((book) => {
+  userBorrowedBooks.forEach((book) => {
     const bookCard = createBookCard(book)
     borrowedList.appendChild(bookCard)
   })
 }
+
+
 
 // Update summary
 async function updateSummary() {
@@ -593,25 +610,37 @@ async function updateSummary() {
 }
 
 // Load history
+// Load history
+// Load history
 async function loadHistory() {
-  console.log("📜 Loading history...")
+    console.log("📜 Loading history...")
 
-  try {
-    const response = await fetch(`${API_BASE}/history`)
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    if (!currentMember) {
+        showError("กรุณาเข้าสู่ระบบเพื่อดูประวัติการยืมของคุณ")
+        return
     }
 
-    history = await response.json()
-    console.log("📜 History loaded:", history.length, "records")
+    try {
+        const response = await fetch(`${API_BASE}/history`)
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
 
-    displayHistory(history)
-  } catch (error) {
-    console.error("❌ Error loading history:", error)
-    showError("ไม่สามารถโหลดประวัติได้: " + error.message)
-  }
+        history = await response.json()
+        console.log("📜 History loaded:", history.length, "records")
+
+        // กรองเฉพาะรายการของผู้ใช้ปัจจุบันโดยใช้ชื่อ borrower
+        const userHistory = history.filter(
+    record => record.borrower.trim().toLowerCase() === currentMember.name.trim().toLowerCase()
+)
+displayHistory(userHistory)
+    } catch (error) {
+        console.error("❌ Error loading history:", error)
+        showError("ไม่สามารถโหลดประวัติได้: " + error.message)
+    }
 }
+
+
 
 // Display history
 function displayHistory(historyData) {
