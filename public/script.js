@@ -214,13 +214,7 @@ function createBookCard(book) {
             </p>
             <p class="book-category"><strong>หมวดหมู่:</strong> ${book.category}</p>
             ${borrowedInfo}
-            <div class="book-actions">
-                ${
-                  book.available
-                    ? `<button class="btn btn-primary" onclick="openBorrowModal('${book._id}')">ยืมหนังสือ</button>`
-                    : `<button class="btn btn-danger" onclick="openReturnModal('${book._id}')">คืนหนังสือ</button>`
-                }
-            </div>
+            
         </div>
     `
 
@@ -676,10 +670,7 @@ function displayHistory(historyData) {
                     <p><i class="fas fa-calendar"></i> <strong>วันที่ต้องคืน:</strong> ${formatDate(record.dueDate)}</p>
                     ${record.returnedDate ? `<p><i class="fas fa-calendar-check"></i> <strong>วันที่คืน:</strong> ${formatDate(record.returnedDate)}</p>` : ""}
                 </div>
-                <div class="book-actions">
-                    <span class="btn ${record.status === "borrowed" ? "btn-danger" : "btn-success"}">
-                        ${record.status === "borrowed" ? "กำลังยืม" : "คืนแล้ว"}
-                    </span>
+                
                 </div>
             </div>
         `
