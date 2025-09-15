@@ -214,7 +214,12 @@ function createBookCard(book) {
             </p>
             <p class="book-category"><strong>หมวดหมู่:</strong> ${book.category}</p>
             ${borrowedInfo}
-            
+            <div class="book-actions">
+  ${ book.available 
+      ? `<button class="btn btn-primary" onclick="openBorrowModal('${book._id}')">ยืมหนังสือ</button>` 
+      : '' 
+  }
+</div>
         </div>
     `
 
